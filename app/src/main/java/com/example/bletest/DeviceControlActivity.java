@@ -1,7 +1,7 @@
 package com.example.bletest;
 
 
-import android.app.Activity;
+
 import android.app.Dialog;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -613,7 +613,8 @@ public class DeviceControlActivity extends AppCompatActivity {
             new Networkutil(new Networkback() {
                 @Override
                 public void postTak(String s) {
-                    Toast.makeText(DeviceControlActivity.this, ""+s, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(DeviceControlActivity.this, "Data has been sent.", Toast.LENGTH_SHORT).show();
+                    db.execSQL("delete from pressure");
                 }
             }).execute("http://analytics.ovinav.com/data/sync","Bearer "+sp.getString("token",""),o.toString());
         }
