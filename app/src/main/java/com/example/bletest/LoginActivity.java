@@ -1,30 +1,25 @@
 package com.example.bletest;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.Manifest;
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-
 import android.os.Build;
 import android.os.Bundle;
-
-import android.os.Parcelable;
-import android.service.autofill.RegexValidator;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.text.TextWatcher;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.CheckBox;
-import android.widget.TextView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -32,8 +27,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Calendar;
-import java.util.Date;
 import java.util.regex.Pattern;
 
 public class LoginActivity extends AppCompatActivity implements Networkback{
@@ -43,6 +36,7 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
     CheckBox check;
     SharedPreferences s;
     String deviceId = "",matId="";
+    LinearLayout parent;
     boolean validEmail=true,validPassword=true;
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -58,6 +52,7 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
         l2 = findViewById(R.id.l2);
         l1 = findViewById(R.id.l1);
         e4.setText(matId);
+        parent = findViewById(R.id.lin_login);
         getSupportActionBar().setTitle("LOGIN");
 
         if (Build.VERSION.SDK_INT >= 26) {
@@ -151,7 +146,9 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     public void login(View v) {
+        deviceId = getSystemService(TelephonyManager.class).getDeviceId();
         String email, password;
         email = e1.getText().toString();
         password = e2.getText().toString();
@@ -167,7 +164,9 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     public void signup(View v) {
+        deviceId = getSystemService(TelephonyManager.class).getDeviceId();
         Intent i = new Intent(this, RegisterActivity.class);
         i.putExtra("devId",deviceId);
         i.putExtra("matId",matId);
@@ -176,7 +175,17 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
 
     @Override
     public void onBackPressed() {
+
         Toast.makeText(this, "Login Required", Toast.LENGTH_SHORT).show();
+        Snackbar.make(parent, "Click Here to Exit App.", Snackbar.LENGTH_LONG)
+                .setAction("Exit", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        LoginActivity.this.finish();
+                        System.exit(0);
+                    }
+                });
+
     }
 
     @Override
