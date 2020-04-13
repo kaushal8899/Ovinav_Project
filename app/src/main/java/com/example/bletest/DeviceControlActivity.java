@@ -17,6 +17,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.icu.util.LocaleData;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -50,6 +51,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.sql.Time;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -58,6 +61,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
+import java.util.TimeZone;
 import java.util.UUID;
 
 /**
@@ -103,7 +107,7 @@ public class DeviceControlActivity extends AppCompatActivity {
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
 
-    private String filename = "Pressure.txt";
+    private String filename = "Pressure_large.json";
     private String filepath = "PressureResult";
     File myExternalFile;
     String myData = "";
@@ -168,13 +172,21 @@ public class DeviceControlActivity extends AppCompatActivity {
       //  SendValueToDevice("3");
 
     }
-
+    String getTimeInMillis(){
+        TimeZone tz = TimeZone.getDefault();
+        Calendar c = Calendar.getInstance(tz);
+        c.add(Calendar.HOUR,5);
+        c.add(Calendar.MINUTE,30);
+        return String.valueOf(c.getTimeInMillis());
+    }
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_device2);
-
-        db = openOrCreateDatabase("BLE", MODE_PRIVATE, null);
+        File f = new File(getExternalFilesDir("data"),"BLE.db");
+        db = SQLiteDatabase.openOrCreateDatabase(f,null);
+        //db = new SQLiteDatabase();
+       // db = openOrCreateDatabase("BLE", MODE_PRIVATE, null);
         String q = "create table if not exists pressure(dataDateTime varchar(255),matrix varchar(255))";
         db.execSQL(q);
         final Intent intent = getIntent();
@@ -229,9 +241,6 @@ public class DeviceControlActivity extends AppCompatActivity {
         if (mBluetoothLeService != null) {
             final boolean result = mBluetoothLeService.connect(mDeviceAddress);
             Log.d(TAG, "Connect request result = " + result);
-            Calendar c ;
-            c = GregorianCalendar.getInstance();
-
         }
     }
 
@@ -310,11 +319,9 @@ public class DeviceControlActivity extends AppCompatActivity {
         if (data != null && data.contains("DataStart")) {
             start = true;
             dataList.clear();
-            datetime = String.valueOf(Calendar.getInstance().getTimeInMillis());
-            return;            //Toast.makeText(DeviceControlActivity.this, datetime, Toast.LENGTH_SHORT).show();
-            //Calendar c = Calendar.getInstance();
-            //c.setTimeInMillis(Long.parseLong(datetime));
-            //Toast.makeText(mBluetoothLeService, ""+c.getTime().toString(), Toast.LENGTH_SHORT).show();
+            datetime = getTimeInMillis();
+            Log.d("ticks",datetime);
+            return;
 
         }
         else if(data != null && data.contains("DataEnd")){
@@ -324,7 +331,9 @@ public class DeviceControlActivity extends AppCompatActivity {
                 cv.put("matrix", covertList(dataList));
                 db.insert("pressure", null, cv);
             }
-            start =false;
+            dataList.clear();
+            datetime = "";
+            start = false;
             return;
         }
 
@@ -332,51 +341,52 @@ public class DeviceControlActivity extends AppCompatActivity {
             // WriteToFile(data);
             mDataField.setText(data);
             // textView.append(data);
-            if(!data.equals("") || data != null || data.length()==0){
+            if(!data.equals("") || data != null || data.length()==0) {
                 String d[] = data.split(":");
-                dataList.add(data);
-                series = new PointsGraphSeries<>();
-                series.setShape(PointsGraphSeries.Shape.POINT);
-                int col;
-
-                int r, b, g, a;
-                a = 128;
-                r = g = 0;
-                b = 255;
-                try {
-                    float pressure = Float.parseFloat(d[2]);
-                    if (pressure > 215) {
-                        r = 255;
-                        b = 0;
-                        a = 200;
-                    } else if (pressure > 180) {
-                        g = 255;
-                        b = 0;
-                        a = 170;
-                    } else if (pressure > 158) {
-                        r = 255;
-                        g = 255;
-                        b = 0;
-                        a = 150;
-                    }
-
-
-                    col = Color.argb(a, r, g, b);
-                    series.setSize(pressure / 4);
-                    series.setColor(col);
-                    //Toast.makeText(mBluetoothLeService, ""+d[0]+":"+d[1], Toast.LENGTH_SHORT).show();
-                    series.appendData(new DataPoint(new Double(d[0]), new Double(d[1])), false, 100);
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            //graph.removeAllSeries();
-                            graph.removeSeries(stack.remove());
+                dataList.add(data.replace("\\r", "").replace("\\n", "").trim());
+                {
+                    series = new PointsGraphSeries<>();
+                    series.setShape(PointsGraphSeries.Shape.POINT);
+                    int col;
+                    int r, b, g, a;
+                    a = 128;
+                    r = g = 0;
+                    b = 255;
+                    try {
+                        float pressure = Float.parseFloat(d[2]);
+                        if (pressure > 215) {
+                            r = 255;
+                            b = 0;
+                            a = 200;
+                        } else if (pressure > 180) {
+                            g = 255;
+                            b = 0;
+                            a = 170;
+                        } else if (pressure > 158) {
+                            r = 255;
+                            g = 255;
+                            b = 0;
+                            a = 150;
                         }
-                    }, 1500);
-                    stack.add(series);
-                    graph.addSeries(series);
-                } catch (Exception ex) {
-                    Log.d("EXCEPTION",ex.toString());
+
+
+                        col = Color.argb(a, r, g, b);
+                        series.setSize(pressure / 4);
+                        series.setColor(col);
+                        //Toast.makeText(mBluetoothLeService, ""+d[0]+":"+d[1], Toast.LENGTH_SHORT).show();
+                        series.appendData(new DataPoint(new Double(d[0]), new Double(d[1])), false, 100);
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                //graph.removeAllSeries();
+                                graph.removeSeries(stack.remove());
+                            }
+                        }, 1500);
+                        stack.add(series);
+                        graph.addSeries(series);
+                    } catch (Exception ex) {
+                        Log.d("EXCEPTION", ex.toString());
+                    }
                 }
             }
         }
@@ -385,11 +395,12 @@ public class DeviceControlActivity extends AppCompatActivity {
     private String covertList(ArrayList<String> dataList) {
         StringBuilder temp = new StringBuilder();
         for(String s:dataList){
-            temp.append(s);
+            temp.append(s.trim().replace("\\r","").replace("\\n","").trim());
+            Log.d("After trim",s.trim().replace("\\r","").replace("\\n","").trim());
             temp.append(",");
         }
         temp.deleteCharAt(temp.length()-1);
-        return String.valueOf(temp);
+        return String.valueOf(temp).replace("\\r","").replace("\\n","").trim();
     }
 
     // Demonstrates how to iterate through the supported GATT Services/Characteristics.
@@ -423,8 +434,10 @@ public class DeviceControlActivity extends AppCompatActivity {
             characteristicRX = gattService.getCharacteristic(BluetoothLeService.UUID_HM_RX_TX);
             if (characteristicRX != null && characteristicTX != null) {
                 Toast.makeText(DeviceControlActivity.this, "BLE connected...!!!", Toast.LENGTH_SHORT).show();
-                if(!isUID)
+                if(!isUID){
                     SendValueToDevice("U");
+                    return;
+                }
                 btn_Instant.setClickable(true);
                 btn_Instant.setAlpha((float)1.0);
                 btn_RealTime.setAlpha((float)1.0);
@@ -447,26 +460,6 @@ public class DeviceControlActivity extends AppCompatActivity {
         return intentFilter;
     }
 
-/*    private void readSeek(SeekBar seekBar, final int pos) {
-        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress,
-                                          boolean fromUser) {
-                RGBFrame[pos] = progress;
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                // TODO Auto-generated method stub
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                // TODO Auto-generated method stub
-                makeChange();
-            }
-        });
-    }*/
 
     public void Instant_btn(View v) {
         //Toast.makeText(DeviceControlActivity.this, "Instant Mode", Toast.LENGTH_SHORT).show();
@@ -576,18 +569,20 @@ public class DeviceControlActivity extends AppCompatActivity {
     }
 
     public void sync(View view) {
-
         JSONArray jsondata = new JSONArray();
         try {
             Cursor c = null;
-
             c = db.rawQuery("select * from pressure",null);
             c.moveToFirst();
+            if(c.getCount()==0){
+                Toast.makeText(this, "Data Not Available.", Toast.LENGTH_SHORT).show();
+                return;
+            }
             for (int i=0;i<c.getCount();i++){
                 JSONObject o = new JSONObject();
                 o.put(c.getColumnName(0),c.getString(0));
-                JSONArray array = new JSONArray();
-                array.put(c.getString(1));
+                JSONArray array = new JSONArray(c.getString(1).split(","));
+                Log.d("BFORESYNC-"+i, array.toString());
                 o.put(c.getColumnName(1),array);
                 jsondata.put(o);
                 c.moveToNext();
@@ -600,15 +595,16 @@ public class DeviceControlActivity extends AppCompatActivity {
 
         JSONObject o = new JSONObject();
         try {
-            o.put("syncStartDateTime",""+Calendar.getInstance().getTimeInMillis());
+            o.put("syncStartDateTime",getTimeInMillis());
             o.put("data",jsondata);
         } catch (JSONException e) {
             e.printStackTrace();
         }
         Log.d("SYNC",o.toString());
+        //WriteToFile(o.toString());
         SharedPreferences sp = getSharedPreferences("user_login", Context.MODE_PRIVATE);
         long exp = Long.parseLong(sp.getString("expiry","0"));
-        long current = Calendar.getInstance().getTimeInMillis();
+        long current = Long.parseLong(getTimeInMillis());
         if(exp>current){
             new Networkutil(new Networkback() {
                 @Override
@@ -620,17 +616,5 @@ public class DeviceControlActivity extends AppCompatActivity {
         }
 
     }
-
-    // on change of bars write char
-/*    private void makeChange() {
-        String str = RGBFrame[0] + "," + RGBFrame[1] + "," + RGBFrame[2] + "\n";
-        Log.d(TAG, "Sending result=" + str);
-        final byte[] tx = str.getBytes();
-        if (mConnected) {
-            characteristicTX.setValue(tx);
-            mBluetoothLeService.writeCharacteristic(characteristicTX);
-            mBluetoothLeService.setCharacteristicNotification(characteristicRX, true);
-        }
-    }*/
 
 }
