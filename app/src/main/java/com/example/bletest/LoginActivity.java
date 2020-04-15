@@ -19,7 +19,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -57,28 +56,16 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
 
         if (Build.VERSION.SDK_INT >= 26) {
             if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    Activity#requestPermissions
                 requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE},100);
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for Activity#requestPermissions for more details.
+
                 return;
             }
             deviceId = getSystemService(TelephonyManager.class).getImei();
 
         }else{
             if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    Activity#requestPermissions
+
                 requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE},100);
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for Activity#requestPermissions for more details.
                 return;
             }
             deviceId = getSystemService(TelephonyManager.class).getDeviceId();
@@ -177,14 +164,6 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
     public void onBackPressed() {
 
         Toast.makeText(this, "Login Required", Toast.LENGTH_SHORT).show();
-        Snackbar.make(parent, "Click Here to Exit App.", Snackbar.LENGTH_LONG)
-                .setAction("Exit", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        LoginActivity.this.finish();
-                        System.exit(0);
-                    }
-                });
 
     }
 
@@ -199,6 +178,9 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
             SharedPreferences.Editor editor = sp.edit();
             editor.putString("token",token);
             editor.putString("expiry",expire);
+            if (check.isChecked()) {
+                editor.putString("matId", matId);
+            }
             editor.commit();
             Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
             finish();

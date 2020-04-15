@@ -1,7 +1,6 @@
 package com.example.bletest;
 
 
-
 import android.app.Dialog;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -17,12 +16,10 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
-import android.icu.util.LocaleData;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
-import android.util.JsonReader;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,7 +33,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.Viewport;
 import com.jjoe64.graphview.series.DataPoint;
-import com.jjoe64.graphview.series.LineGraphSeries;
 import com.jjoe64.graphview.series.PointsGraphSeries;
 
 import org.json.JSONArray;
@@ -51,16 +47,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.sql.Time;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Stack;
 import java.util.TimeZone;
 import java.util.UUID;
 
@@ -179,12 +171,21 @@ public class DeviceControlActivity extends AppCompatActivity {
         c.add(Calendar.MINUTE,30);
         return String.valueOf(c.getTimeInMillis());
     }
+
+    SharedPreferences sp2;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_device2);
+        sp2 = getSharedPreferences("user_login", Context.MODE_PRIVATE);
         File f = new File(getExternalFilesDir("data"),"BLE.db");
         db = SQLiteDatabase.openOrCreateDatabase(f,null);
+        String matID = sp2.getString("matId", "none");
+        if (!matID.equals("none")) {
+            isUID = true;
+            Toast.makeText(this, "Login Successful.", Toast.LENGTH_SHORT).show();
+            uid = matID;
+        }
         //db = new SQLiteDatabase();
        // db = openOrCreateDatabase("BLE", MODE_PRIVATE, null);
         String q = "create table if not exists pressure(dataDateTime varchar(255),matrix varchar(255))";
@@ -285,6 +286,9 @@ public class DeviceControlActivity extends AppCompatActivity {
             case R.id.logout:
                 Intent i = new Intent(this,LoginActivity.class);
                 i.putExtra("matId",uid);
+                SharedPreferences.Editor editor = sp2.edit();
+                editor.putString("matId", "none");
+                editor.commit();
                 mBluetoothLeService.disconnect();
                 startActivity(i);
                 break;

@@ -1,29 +1,34 @@
 package com.example.bletest;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.ImageView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 public class SplashActivity extends AppCompatActivity {
-  //  SharedPreferences s;
+    ImageView img;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
+        img = findViewById(R.id.img);
+        Animation fadein = AnimationUtils.loadAnimation(this, R.anim.fadein);
+        final Animation fadeout = AnimationUtils.loadAnimation(this, R.anim.fadeout);
+        img.startAnimation(fadein);
+        img.postOnAnimationDelayed(new Runnable() {
+            @Override
+            public void run() {
+                img.startAnimation(fadeout);
+            }
+        }, 1500);
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-    //            s = getSharedPreferences("ble_login",MODE_PRIVATE);
-      //          String mail = s.getString("email","null");
-        //        String password = s.getString("password","null");
-//                Class c;
-//                if(!mail.equals("null") && !password.equals("null"))
-//                    c = MainActivity.class;
-//                else
-//                    c= LoginActivity.class;
                 startActivity(new Intent(SplashActivity.this,MainActivity.class));
                 finish();
             }
