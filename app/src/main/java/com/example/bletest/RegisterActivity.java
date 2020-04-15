@@ -1,19 +1,13 @@
 package com.example.bletest;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.annotation.SuppressLint;
-import android.content.ContentValues;
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Patterns;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -29,9 +23,9 @@ public class RegisterActivity extends AppCompatActivity implements Networkback{
     TextInputLayout l1,l2,l3,l4,l5;
     String deviceId,matId;
 
-    private boolean validEmail;
-    private boolean validPassword;
-    private boolean validPhone;
+    private boolean validEmail = true;
+    private boolean validPassword = true;
+    private boolean validPhone = true;
 
     @SuppressLint("RestrictedApi")
     @Override
@@ -165,7 +159,7 @@ public class RegisterActivity extends AppCompatActivity implements Networkback{
         JSONObject o = null;
         try {
             o = new JSONObject(s);
-            o.getString("id");
+            o.getString("Id");
             Toast.makeText(this, "Register Successful.", Toast.LENGTH_SHORT).show();
             finish();
         } catch (JSONException ex) {
