@@ -77,13 +77,13 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
         e1.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
+                String e = e1.getText().toString().trim();
                 if(!hasFocus){
-                    if (TextUtils.isEmpty(e1.getText().toString())) {
+                    if (TextUtils.isEmpty(e)) {
                         l1.setError("Email Required");
                         validEmail = false;
                         return;
-                    }
-                    else if(!Patterns.EMAIL_ADDRESS.matcher(e1.getText().toString()).matches()){
+                    } else if (!Patterns.EMAIL_ADDRESS.matcher(e).matches()) {
                         l1.setError("Enter a valid Email");
                         validEmail = false;
                         return;
@@ -137,15 +137,15 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
     public void login(View v) {
         deviceId = getSystemService(TelephonyManager.class).getDeviceId();
         String email, password;
-        email = e1.getText().toString();
-        password = e2.getText().toString();
+        email = e1.getText().toString().trim();
+        password = e2.getText().toString().trim();
         if(!validEmail || !validPassword){
             Toast.makeText(this, "Invalid Email or Password", Toast.LENGTH_SHORT).show();
             return;
         }
         try {
             User u = new User(this,this);
-            u.login(email,password,deviceId,matId);
+            u.login(email.trim(), password.trim(), deviceId);
         } catch (JSONException ex) {
             ex.printStackTrace();
         }
@@ -177,7 +177,10 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
             SharedPreferences sp = getSharedPreferences("user_login", Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sp.edit();
             editor.putString("token",token);
-            editor.putString("expiry",expire);
+            editor.putString("email", e1.getText().toString().trim());
+            editor.putString("password", e2.getText().toString().trim());
+            editor.putLong("expiry", Long.parseLong(expire));
+            editor.putString("deviceId", deviceId);
             if (check.isChecked()) {
                 editor.putString("matId", matId);
             }

@@ -57,12 +57,11 @@ public class RegisterActivity extends AppCompatActivity implements Networkback{
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
                 if(!hasFocus){
-                    if (TextUtils.isEmpty(e3.getText().toString())) {
+                    if (TextUtils.isEmpty(e3.getText().toString().trim())) {
                         l3.setError("Email Required");
                         validEmail = false;
                         return;
-                    }
-                    else if(!Patterns.EMAIL_ADDRESS.matcher(e3.getText().toString()).matches()){
+                    } else if (!Patterns.EMAIL_ADDRESS.matcher(e3.getText().toString().trim()).matches()) {
                         l3.setError("Enter a valid Email");
                         validEmail = false;
                         return;
@@ -78,8 +77,8 @@ public class RegisterActivity extends AppCompatActivity implements Networkback{
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
                 if(!hasFocus){
-                    String t = e4.getText().toString();
-                    if (TextUtils.isEmpty(e4.getText().toString())) {
+                    String t = e4.getText().toString().trim();
+                    if (TextUtils.isEmpty(t)) {
                         l4.setError("Phone Number Required");
                         validPhone = false;
                         return;
@@ -121,11 +120,11 @@ public class RegisterActivity extends AppCompatActivity implements Networkback{
     }
     public void register(View v){
         String fname,lname,email,mobile,pass;
-        fname = e1.getText().toString();
-        lname = e2.getText().toString();
-        email = e3.getText().toString();
-        mobile = e4.getText().toString();
-        pass = e5.getText().toString();
+        fname = e1.getText().toString().trim();
+        lname = e2.getText().toString().trim();
+        email = e3.getText().toString().trim();
+        mobile = e4.getText().toString().trim();
+        pass = e5.getText().toString().trim();
         if(TextUtils.isEmpty(fname) && fname.length()<2){
             l1.setError("First Name Required");
             return;

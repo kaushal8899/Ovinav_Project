@@ -2,11 +2,7 @@ package com.example.bletest;
 
 
 import android.app.Activity;
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.widget.Toast;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -28,12 +24,13 @@ public class User {
         this.password = password;
         this.mobile = mobile;
     }
-    public void login(String email, String password, String d_id, String m_id) throws JSONException {
+
+    public void login(String email, String password, String d_id) throws JSONException {
         JSONObject j = new JSONObject();
         j.put("userName",email);
         j.put("password",password);
         j.put("deviceId",d_id);
-        j.put("matId",m_id);
+        //  j.put("matId",m_id);
 
         new Networkutil(n).execute("http://analytics.ovinav.com/auth/token","",j.toString());
     }

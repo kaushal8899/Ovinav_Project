@@ -288,6 +288,7 @@ public class DeviceControlActivity extends AppCompatActivity {
                 i.putExtra("matId",uid);
                 SharedPreferences.Editor editor = sp2.edit();
                 editor.putString("matId", "none");
+                editor.putLong("expiry", 0);
                 editor.commit();
                 mBluetoothLeService.disconnect();
                 startActivity(i);
@@ -416,7 +417,6 @@ public class DeviceControlActivity extends AppCompatActivity {
         String unknownServiceString = getResources().getString(R.string.unknown_service);
         ArrayList<HashMap<String, String>> gattServiceData = new ArrayList<HashMap<String, String>>();
 
-
         // Loops through available GATT Services.
         for (BluetoothGattService gattService : gattServices) {
             HashMap<String, String> currentServiceData = new HashMap<String, String>();
@@ -442,17 +442,11 @@ public class DeviceControlActivity extends AppCompatActivity {
                     SendValueToDevice("U");
                     return;
                 }
-                btn_Instant.setClickable(true);
-                btn_Instant.setAlpha((float)1.0);
-                btn_RealTime.setAlpha((float)1.0);
-                btn_RealTime.setClickable(true);
-                btn_sync.setAlpha((float)1.0);
-                btn_sync.setClickable(true);
+                btn_Instant.setEnabled(true);
+                btn_RealTime.setEnabled(true);
 
             }
-
         }
-
     }
 
     private static IntentFilter makeGattUpdateIntentFilter() {
@@ -467,31 +461,31 @@ public class DeviceControlActivity extends AppCompatActivity {
 
     public void Instant_btn(View v) {
         //Toast.makeText(DeviceControlActivity.this, "Instant Mode", Toast.LENGTH_SHORT).show();
-        SendValueToDevice("2");
-        graphdialog = new Dialog(this);
-        graphdialog.setContentView(R.layout.graph);
-        graph = graphdialog.findViewById(R.id.graph);
-        graphdialog.setCanceledOnTouchOutside(false);
-        graphdialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-            @Override
-            public void onCancel(DialogInterface dialog) {
-                SendValueToDevice("5");
-            }
-        });
-        graphdialog.show();
-        Viewport port = graph.getViewport();
-        port.setXAxisBoundsManual(true);
-        port.setYAxisBoundsManual(true);
-        port.setMaxX(30);
-        port.setMaxY(30);
-        port.setMinX(0);
-        port.setMinY(0);
-        // port.setBackgroundColor(Color.rgb(255,255,0));
-        port.setScalable(false);
-        port.setScrollable(false);
-
+        if (isUID) {
+            SendValueToDevice("2");
+            graphdialog = new Dialog(this);
+            graphdialog.setContentView(R.layout.graph);
+            graph = graphdialog.findViewById(R.id.graph);
+            graphdialog.setCanceledOnTouchOutside(false);
+            graphdialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+                @Override
+                public void onCancel(DialogInterface dialog) {
+                    SendValueToDevice("5");
+                }
+            });
+            graphdialog.show();
+            Viewport port = graph.getViewport();
+            port.setXAxisBoundsManual(true);
+            port.setYAxisBoundsManual(true);
+            port.setMaxX(30);
+            port.setMaxY(30);
+            port.setMinX(0);
+            port.setMinY(0);
+            // port.setBackgroundColor(Color.rgb(255,255,0));
+            port.setScalable(false);
+            port.setScrollable(false);
+        }
     }
-
 
     private void SendValueToDevice(String Msg) {
         String str = Msg;
@@ -507,21 +501,27 @@ public class DeviceControlActivity extends AppCompatActivity {
     }
 
     public void read(View view) {
-        String btn_text = btn_RealTime.getText().toString();
-        if (btn_text.startsWith("Start")) {
-            btn_Instant.setClickable(false);
-            SendValueToDevice("1");
-            editor.putBoolean("isReal", true);
-            editor.apply();
-            btn_RealTime.setText("Stop Real Time Mode");
-            Toast.makeText(DeviceControlActivity.this, "Real Time Mode Started.", Toast.LENGTH_LONG).show();
+        if (!btn_RealTime.isClickable())
+            return;
+        if (isUID) {
+            String btn_text = btn_RealTime.getText().toString();
+            if (btn_text.startsWith("Start")) {
+                btn_Instant.setClickable(false);
+                SendValueToDevice("1");
+                editor.putBoolean("isReal", true);
+                editor.apply();
+                btn_RealTime.setText("Stop Real Time Mode");
+                Toast.makeText(DeviceControlActivity.this, "Real Time Mode Started.", Toast.LENGTH_LONG).show();
+            } else {
+                btn_Instant.setClickable(true);
+                SendValueToDevice("3");
+                editor.putBoolean("isReal", false);
+                editor.apply();
+                btn_RealTime.setText("Start Real Time Mode");
+                Toast.makeText(DeviceControlActivity.this, "Real Time Mode Stopped.", Toast.LENGTH_LONG).show();
+            }
         } else {
-            btn_Instant.setClickable(true);
-            SendValueToDevice("3");
-            editor.putBoolean("isReal", false);
-            editor.apply();
-            btn_RealTime.setText("Start Real Time Mode");
-            Toast.makeText(DeviceControlActivity.this, "Real Time Mode Stopped.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Device Not Connected.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -573,6 +573,15 @@ public class DeviceControlActivity extends AppCompatActivity {
     }
 
     public void sync(View view) {
+        long exp = sp2.getLong("expiry", 0);
+        long current = Long.parseLong(getTimeInMillis());
+        if (exp < current) {
+            Toast.makeText(this, "Session Expired.", Toast.LENGTH_SHORT).show();
+            Intent i = new Intent(this, LoginActivity.class);
+            i.putExtra("matId", uid);
+            startActivity(i);
+            return;
+        }
         JSONArray jsondata = new JSONArray();
         try {
             Cursor c = null;
@@ -606,19 +615,13 @@ public class DeviceControlActivity extends AppCompatActivity {
         }
         Log.d("SYNC",o.toString());
         //WriteToFile(o.toString());
-        SharedPreferences sp = getSharedPreferences("user_login", Context.MODE_PRIVATE);
-        long exp = Long.parseLong(sp.getString("expiry","0"));
-        long current = Long.parseLong(getTimeInMillis());
-        if(exp>current){
-            new Networkutil(new Networkback() {
-                @Override
-                public void postTak(String s) {
-                    Toast.makeText(DeviceControlActivity.this, "Data has been sent.", Toast.LENGTH_SHORT).show();
-                    db.execSQL("delete from pressure");
-                }
-            }).execute("http://analytics.ovinav.com/data/sync","Bearer "+sp.getString("token",""),o.toString());
-        }
-
+        new Networkutil(new Networkback() {
+            @Override
+            public void postTak(String s) {
+                Toast.makeText(DeviceControlActivity.this, "Data has been sent.", Toast.LENGTH_SHORT).show();
+                db.execSQL("delete from pressure");
+            }
+        }).execute("http://analytics.ovinav.com/data/sync", "Bearer " + sp2.getString("token", ""), o.toString());
     }
 
 }

@@ -8,6 +8,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,13 +34,13 @@ public class MainActivity extends ListActivity {
     LeDeviceListAdapter listadapter;
     boolean mScanning;
     Handler mHandler;
-
+    SharedPreferences sp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mHandler = new Handler();
-
+        sp = getSharedPreferences("device", MODE_PRIVATE);
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this, "BLE not supported", Toast.LENGTH_SHORT).show();
             finish();
@@ -74,8 +75,16 @@ public class MainActivity extends ListActivity {
                         Manifest.permission.ACCESS_FINE_LOCATION)
                         == PackageManager.PERMISSION_GRANTED) {
 
-                    //Request location updates:
                     Toast.makeText(this, "Permission Granted...", Toast.LENGTH_SHORT).show();
+                    String device_name = sp.getString(DeviceControlActivity.EXTRAS_DEVICE_NAME, "none");
+                    String device_add = sp.getString(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, "none");
+                    if (!device_name.equals("none") && !device_name.equals("none")) {
+                        final Intent intent = new Intent(this, DeviceControlActivity.class);
+                        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_NAME, device_name);
+                        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, device_add);
+                        startActivity(intent);
+                        finish();
+                    }
                 }
                 else{
                     finish();
@@ -174,9 +183,17 @@ public class MainActivity extends ListActivity {
     protected void onListItemClick(ListView l, View v, int position, long id) {
         final BluetoothDevice device = listadapter.getDevice(position);
         if (device == null) return;
+
+        SharedPreferences.Editor editor = sp.edit();
+        String device_name = device.getName();
+        String device_add = device.getAddress();
+        editor.putString(DeviceControlActivity.EXTRAS_DEVICE_NAME, device_name);
+        editor.putString(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, device_add);
+        editor.commit();
+
         final Intent intent = new Intent(this, DeviceControlActivity.class);
-        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_NAME, device.getName());
-        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
+        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_NAME, device_name);
+        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, device_add);
         if (mScanning) {
             bluetoothAdapter.stopLeScan(mLeScanCallback);
             bluetoothAdapter.cancelDiscovery();
