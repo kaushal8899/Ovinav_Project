@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
@@ -26,6 +27,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.regex.Pattern;
 
 public class LoginActivity extends AppCompatActivity implements Networkback{
@@ -61,6 +64,7 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
                 return;
             }
             deviceId = getSystemService(TelephonyManager.class).getImei();
+            e3.setText(deviceId);
 
         }else{
             if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
@@ -69,10 +73,10 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
                 return;
             }
             deviceId = getSystemService(TelephonyManager.class).getDeviceId();
+            e3.setText(deviceId);
         }
 
         check = findViewById(R.id.checkbox);
-
         e3.setText(deviceId);
         e1.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
@@ -135,6 +139,10 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     public void login(View v) {
+        if (!isNetworkConnected()) {
+            Toast.makeText(this, "Check Network Connection.", Toast.LENGTH_LONG).show();
+            return;
+        }
         deviceId = getSystemService(TelephonyManager.class).getDeviceId();
         String email, password;
         email = e1.getText().toString().trim();
@@ -167,6 +175,21 @@ public class LoginActivity extends AppCompatActivity implements Networkback{
 
     }
 
+    private boolean isNetworkConnected() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        return cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
+    }
+
+    public boolean isInternetAvailable() {
+        try {
+            InetAddress address = InetAddress.getByName("www.google.com");
+            return !address.equals("");
+        } catch (UnknownHostException e) {
+            Toast.makeText(this, "No Internet", Toast.LENGTH_LONG).show();
+        }
+        return false;
+    }
     @Override
     public void postTak(String s) {
         JSONObject o = null;

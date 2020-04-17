@@ -16,7 +16,6 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,7 +30,7 @@ public class BluetoothLeService extends Service {
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private String mBluetoothDeviceAddress;
-    private BluetoothGatt mBluetoothGatt;
+    public BluetoothGatt mBluetoothGatt;
     private int mConnectionState = STATE_DISCONNECTED;
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
@@ -228,7 +227,7 @@ public class BluetoothLeService extends Service {
         Log.d(TAG, "Trying to create a new connection.");
         mBluetoothDeviceAddress = address;
         mConnectionState = STATE_CONNECTING;
-        mBluetoothGatt.requestMtu(512);
+
         return true;
     }
 

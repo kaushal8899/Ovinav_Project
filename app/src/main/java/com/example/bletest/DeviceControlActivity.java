@@ -16,6 +16,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -69,7 +70,7 @@ public class DeviceControlActivity extends AppCompatActivity {
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
     private int[] RGBFrame = {0, 0, 0};
     private TextView isSerial;
-    String uid= "";
+    String uid = "";
     private TextView mConnectionState;
     private TextView mDataField;
     private TextView textView;
@@ -140,8 +141,13 @@ public class DeviceControlActivity extends AppCompatActivity {
                 mConnected = true;
                 updateConnectionState(R.string.connected);
                 invalidateOptionsMenu();
+                //mBluetoothLeService.mBluetoothGatt.requestMtu(64);
             } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 mConnected = false;
+                btn_Instant.setEnabled(false);
+                btn_Instant.setTextColor(Color.BLACK);
+                btn_RealTime.setTextColor(Color.BLACK);
+                btn_RealTime.setEnabled(false);
                 updateConnectionState(R.string.disconnected);
                 invalidateOptionsMenu();
                 clearUI();
@@ -161,25 +167,25 @@ public class DeviceControlActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-      //  SendValueToDevice("3");
+        //  SendValueToDevice("3");
 
     }
-    String getTimeInMillis(){
+
+    String getTimeInMillis() {
         TimeZone tz = TimeZone.getDefault();
         Calendar c = Calendar.getInstance(tz);
-        c.add(Calendar.HOUR,5);
-        c.add(Calendar.MINUTE,30);
         return String.valueOf(c.getTimeInMillis());
     }
 
     SharedPreferences sp2;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_device2);
         sp2 = getSharedPreferences("user_login", Context.MODE_PRIVATE);
-        File f = new File(getExternalFilesDir("data"),"BLE.db");
-        db = SQLiteDatabase.openOrCreateDatabase(f,null);
+        File f = new File(getExternalFilesDir("data"), "BLE.db");
+        db = SQLiteDatabase.openOrCreateDatabase(f, null);
         String matID = sp2.getString("matId", "none");
         if (!matID.equals("none")) {
             isUID = true;
@@ -187,8 +193,8 @@ public class DeviceControlActivity extends AppCompatActivity {
             uid = matID;
         }
         //db = new SQLiteDatabase();
-       // db = openOrCreateDatabase("BLE", MODE_PRIVATE, null);
-        String q = "create table if not exists pressure(dataDateTime varchar(255),matrix varchar(255))";
+        // db = openOrCreateDatabase("BLE", MODE_PRIVATE, null);
+        String q = "create table if not exists pressure(dataDateTime varchar(255),matrix text)";
         db.execSQL(q);
         final Intent intent = getIntent();
         mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
@@ -202,11 +208,6 @@ public class DeviceControlActivity extends AppCompatActivity {
 
         mDataField = (TextView) findViewById(R.id.data_value);
 
-        // textView = (TextView) findViewById(R.id.textView);
-
-/*        mRed = (SeekBar) findViewById(R.id.seekRed);
-        mGreen = (SeekBar) findViewById(R.id.seekGreen);
-        mBlue = (SeekBar) findViewById(R.id.seekBlue);*/
 
         btn_Instant = (Button) findViewById(R.id.Instant_btn);
         btn_RealTime = findViewById(R.id.real_btn);
@@ -218,9 +219,6 @@ public class DeviceControlActivity extends AppCompatActivity {
             btn_RealTime.setText("Stop Real Time Mode");
         }
 
-/*        readSeek(mRed,0);
-        readSeek(mGreen,1);
-        readSeek(mBlue,2);*/
 
         if (!isExternalStorageAvailable() || isExternalStorageReadOnly()) {
             Toast.makeText(getApplicationContext(), "External Storage Not Available. Result File Cannot be Created.", Toast.LENGTH_LONG).show();
@@ -228,7 +226,7 @@ public class DeviceControlActivity extends AppCompatActivity {
             myExternalFile = new File(getExternalFilesDir(filepath), filename);
         }
 
-        // getActionBar().setTitle(mDeviceName);
+        //getActionBar().setTitle("Connection For :" + mDeviceName);
         // getActionBar().setDisplayHomeAsUpEnabled(true);
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
@@ -284,11 +282,11 @@ public class DeviceControlActivity extends AppCompatActivity {
                 onBackPressed();
                 return true;
             case R.id.logout:
-                Intent i = new Intent(this,LoginActivity.class);
-                i.putExtra("matId",uid);
+                Intent i = new Intent(this, LoginActivity.class);
+                i.putExtra("matId", uid);
                 SharedPreferences.Editor editor = sp2.edit();
                 editor.putString("matId", "none");
-                editor.putLong("expiry", 0);
+                //editor.putLong("expiry", 0);
                 editor.commit();
                 mBluetoothLeService.disconnect();
                 startActivity(i);
@@ -309,12 +307,12 @@ public class DeviceControlActivity extends AppCompatActivity {
     Queue<PointsGraphSeries> stack = new LinkedList<>();
 
     private void displayData(String data) {
-       // Toast.makeText(DeviceControlActivity.this, data, Toast.LENGTH_SHORT).show();
-        if(!isUID){
+        // Toast.makeText(DeviceControlActivity.this, data, Toast.LENGTH_SHORT).show();
+        if (!isUID) {
             uid = data;
             isUID = true;
-            Intent i = new Intent(this,LoginActivity.class);
-            i.putExtra("matId",uid);
+            Intent i = new Intent(this, LoginActivity.class);
+            i.putExtra("matId", uid);
             mBluetoothLeService.disconnect();
             startActivity(i);
         }
@@ -324,15 +322,16 @@ public class DeviceControlActivity extends AppCompatActivity {
         if (data != null && data.contains("DataStart")) {
             start = true;
             dataList.clear();
+
             datetime = getTimeInMillis();
-            Log.d("ticks",datetime);
+            Log.d("ticks", datetime);
             return;
 
-        }
-        else if(data != null && data.contains("DataEnd")){
-            if(dataList.size()>0 && start){
+        } else if (data != null && data.contains("DataEnd")) {
+            if (dataList.size() > 0 && start) {
                 cv = new ContentValues();
                 cv.put("dataDateTime", datetime);
+
                 cv.put("matrix", covertList(dataList));
                 db.insert("pressure", null, cv);
             }
@@ -342,11 +341,12 @@ public class DeviceControlActivity extends AppCompatActivity {
             return;
         }
 
-        if(start){
+        if (start) {
             // WriteToFile(data);
             mDataField.setText(data);
             // textView.append(data);
-            if(!data.equals("") || data != null || data.length()==0) {
+            if (!data.equals("") || data != null || data.length() == 0) {
+                data = data.replace("\\r", "").replace("\\n", "").trim();
                 String d[] = data.split(":");
                 dataList.add(data.replace("\\r", "").replace("\\n", "").trim());
                 {
@@ -398,14 +398,15 @@ public class DeviceControlActivity extends AppCompatActivity {
     }
 
     private String covertList(ArrayList<String> dataList) {
-        StringBuilder temp = new StringBuilder();
-        for(String s:dataList){
-            temp.append(s.trim().replace("\\r","").replace("\\n","").trim());
-            Log.d("After trim",s.trim().replace("\\r","").replace("\\n","").trim());
-            temp.append(",");
+
+        StringBuffer buffer = new StringBuffer();
+        for (String s : dataList) {
+            buffer.append(s.trim().replace("\\r", "").replace("\\n", "").trim());
+            Log.d("After trim", s.trim().replace("\\r", "").replace("\\n", "").trim());
+            buffer.append(",");
         }
-        temp.deleteCharAt(temp.length()-1);
-        return String.valueOf(temp).replace("\\r","").replace("\\n","").trim();
+        buffer.deleteCharAt(buffer.length() - 1);
+        return String.valueOf(buffer).replace("\\r", "").replace("\\n", "").trim();
     }
 
     // Demonstrates how to iterate through the supported GATT Services/Characteristics.
@@ -438,12 +439,14 @@ public class DeviceControlActivity extends AppCompatActivity {
             characteristicRX = gattService.getCharacteristic(BluetoothLeService.UUID_HM_RX_TX);
             if (characteristicRX != null && characteristicTX != null) {
                 Toast.makeText(DeviceControlActivity.this, "BLE connected...!!!", Toast.LENGTH_SHORT).show();
-                if(!isUID){
+                if (!isUID) {
                     SendValueToDevice("U");
                     return;
                 }
                 btn_Instant.setEnabled(true);
                 btn_RealTime.setEnabled(true);
+                btn_Instant.setTextColor(Color.WHITE);
+                btn_RealTime.setTextColor(Color.WHITE);
 
             }
         }
@@ -473,6 +476,7 @@ public class DeviceControlActivity extends AppCompatActivity {
                     SendValueToDevice("5");
                 }
             });
+            graph.setKeepScreenOn(true);
             graphdialog.show();
             Viewport port = graph.getViewport();
             port.setXAxisBoundsManual(true);
@@ -501,19 +505,20 @@ public class DeviceControlActivity extends AppCompatActivity {
     }
 
     public void read(View view) {
+
         if (!btn_RealTime.isClickable())
             return;
         if (isUID) {
             String btn_text = btn_RealTime.getText().toString();
             if (btn_text.startsWith("Start")) {
-                btn_Instant.setClickable(false);
+                btn_Instant.setEnabled(false);
                 SendValueToDevice("1");
                 editor.putBoolean("isReal", true);
                 editor.apply();
                 btn_RealTime.setText("Stop Real Time Mode");
                 Toast.makeText(DeviceControlActivity.this, "Real Time Mode Started.", Toast.LENGTH_LONG).show();
             } else {
-                btn_Instant.setClickable(true);
+                btn_Instant.setEnabled(true);
                 SendValueToDevice("3");
                 editor.putBoolean("isReal", false);
                 editor.apply();
@@ -572,56 +577,132 @@ public class DeviceControlActivity extends AppCompatActivity {
         return false;
     }
 
+    private boolean isNetworkConnected() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        return cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
+    }
+
     public void sync(View view) {
-        long exp = sp2.getLong("expiry", 0);
-        long current = Long.parseLong(getTimeInMillis());
-        if (exp < current) {
-            Toast.makeText(this, "Session Expired.", Toast.LENGTH_SHORT).show();
-            Intent i = new Intent(this, LoginActivity.class);
-            i.putExtra("matId", uid);
-            startActivity(i);
+        if (!isNetworkConnected()) {
+            Toast.makeText(this, "Check Network Connection.", Toast.LENGTH_LONG).show();
             return;
         }
+        long exp = sp2.getLong("expiry", 0);
+        long current = Long.parseLong(getTimeInMillis());
+        final User u = new User(this, new Networkback() {
+            @Override
+            public void postTak(String s) {
+                JSONObject o = null;
+                try {
+                    o = new JSONObject(s);
+                    String token = o.getString("token");
+                    String expire = o.getString("expiry");
+                    SharedPreferences.Editor editor = sp2.edit();
+                    editor.putString("token", token);
+                    editor.putLong("expiry", Long.parseLong(expire));
+                    editor.commit();
+
+                } catch (JSONException ex) {
+                    try {
+                        JSONArray errors = o.getJSONArray("Errors");
+                        for (int i = 0; i < errors.length(); i++) {
+                            Toast.makeText(DeviceControlActivity.this, errors.getString(i), Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (JSONException e) {
+
+                    }
+                    Intent i = new Intent(DeviceControlActivity.this, LoginActivity.class);
+                    i.putExtra("matId", uid);
+                    startActivity(i);
+                    return;
+                }
+            }
+        });
+        if (exp < current) {
+            try {
+                u.login(sp2.getString("email", ""), sp2.getString("password", ""), sp2.getString("deviceId", ""));
+            } catch (JSONException e) {
+                e.printStackTrace();
+                Intent i = new Intent(this, LoginActivity.class);
+                i.putExtra("matId", uid);
+                startActivity(i);
+                return;
+            }
+        }
+
         JSONArray jsondata = new JSONArray();
         try {
             Cursor c = null;
-            c = db.rawQuery("select * from pressure",null);
+            c = db.rawQuery("select * from pressure", null);
             c.moveToFirst();
-            if(c.getCount()==0){
+            if (c.getCount() == 0) {
                 Toast.makeText(this, "Data Not Available.", Toast.LENGTH_SHORT).show();
                 return;
             }
-            for (int i=0;i<c.getCount();i++){
+            btn_sync.setEnabled(false);
+            btn_Instant.setEnabled(false);
+            for (int i = 0; i < c.getCount(); i++) {
                 JSONObject o = new JSONObject();
-                o.put(c.getColumnName(0),c.getString(0));
-                JSONArray array = new JSONArray(c.getString(1).split(","));
-                Log.d("BFORESYNC-"+i, array.toString());
-                o.put(c.getColumnName(1),array);
+                o.put(c.getColumnName(0), c.getString(0));
+                JSONArray array = new JSONArray(c.getString(1).replace("\\n", "").replace("\\n", "").trim()
+                        .split(","));
+                Log.d("BFORESYNC-" + i, array.toString());
+                o.put(c.getColumnName(1), array);
                 jsondata.put(o);
                 c.moveToNext();
             }
-        }
-        catch (Exception e1) {
+        } catch (Exception e1) {
             e1.printStackTrace();
-            Log.d("JSONSYNC",e1.toString());
+            Log.d("JSONSYNC", e1.toString());
+            btn_sync.setEnabled(true);
+            if (mConnected)
+                btn_Instant.setEnabled(true);
         }
 
         JSONObject o = new JSONObject();
         try {
-            o.put("syncStartDateTime",getTimeInMillis());
-            o.put("data",jsondata);
+            o.put("syncStartDateTime", getTimeInMillis());
+            o.put("data", jsondata);
         } catch (JSONException e) {
             e.printStackTrace();
+            btn_sync.setEnabled(true);
+            if (mConnected)
+                btn_Instant.setEnabled(true);
         }
-        Log.d("SYNC",o.toString());
-        //WriteToFile(o.toString());
+        Log.d("SYNC", o.toString());
+        WriteToFile(o.toString());
         new Networkutil(new Networkback() {
             @Override
             public void postTak(String s) {
-                Toast.makeText(DeviceControlActivity.this, "Data has been sent.", Toast.LENGTH_SHORT).show();
-                db.execSQL("delete from pressure");
+                Log.d("RESs", s);
+                JSONObject o = null;
+                try {
+                    o = new JSONObject(s);
+                    o.get("Id");
+                    Toast.makeText(DeviceControlActivity.this, "Data has been sent.", Toast.LENGTH_SHORT).show();
+                    db.execSQL("delete from pressure");
+                    btn_sync.setEnabled(true);
+                    if (mConnected)
+                        btn_Instant.setEnabled(true);
+                } catch (Exception ex) {
+                    Toast.makeText(getApplicationContext(), "Sync Failed.!!\n Try Again", Toast.LENGTH_SHORT).show();
+                    btn_sync.setEnabled(true);
+                    if (mConnected)
+                        btn_Instant.setEnabled(true);
+                    try {
+                        u.login(sp2.getString("email", ""), sp2.getString("password", ""), sp2.getString("deviceId", ""));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        Intent i = new Intent(DeviceControlActivity.this, LoginActivity.class);
+                        i.putExtra("matId", uid);
+                        startActivity(i);
+                        return;
+                    }
+                }
+
             }
         }).execute("http://analytics.ovinav.com/data/sync", "Bearer " + sp2.getString("token", ""), o.toString());
     }
-
 }
+

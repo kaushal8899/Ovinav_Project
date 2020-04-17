@@ -1,6 +1,8 @@
 package com.example.bletest;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Patterns;
@@ -16,6 +18,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.regex.Pattern;
 
 public class RegisterActivity extends AppCompatActivity implements Networkback{
@@ -65,8 +69,7 @@ public class RegisterActivity extends AppCompatActivity implements Networkback{
                         l3.setError("Enter a valid Email");
                         validEmail = false;
                         return;
-                    }
-                    else {
+                    } else {
                         l3.setError(null);
                         validEmail = true;
                     }
@@ -82,13 +85,11 @@ public class RegisterActivity extends AppCompatActivity implements Networkback{
                         l4.setError("Phone Number Required");
                         validPhone = false;
                         return;
-                    }
-                    else if(!Pattern.matches("[a-zA-Z]+",t) && t.length()!=10){
+                    } else if(!Pattern.matches("[a-zA-Z]+",t) && t.length()!=10){
                         l4.setError("Enter a valid Phone Number");
                         validPhone = false;
                         return;
-                    }
-                    else {
+                    } else {
                         l4.setError(null);
                         validPhone = true;
                     }
@@ -103,13 +104,11 @@ public class RegisterActivity extends AppCompatActivity implements Networkback{
                         l5.setError("Password Required");
                         validPassword = false;
                         return;
-                    }
-                    else if(!Pattern.compile("^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?!.*\\s).{8,32}$").matcher(e5.getText().toString()).matches()){
+                    } else if(!Pattern.compile("^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?!.*\\s).{8,32}$").matcher(e5.getText().toString()).matches()){
                         l5.setError("Password Must Contain one Upper,Lower,digit and Special Symbol.Length should between 8 and 32.");
                         validPassword = false;
                         return;
-                    }
-                    else {
+                    } else {
                         l5.setError(null);
                         validPassword = true;
                     }
@@ -118,7 +117,27 @@ public class RegisterActivity extends AppCompatActivity implements Networkback{
         });
 
     }
+
+    private boolean isNetworkConnected() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        return cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
+    }
+
+    public boolean isInternetAvailable() {
+        try {
+            InetAddress address = InetAddress.getByName("www.google.com");
+            return !address.equals("");
+        } catch (UnknownHostException e) {
+            Toast.makeText(this, "No Internet", Toast.LENGTH_LONG).show();
+        }
+        return false;
+    }
     public void register(View v){
+        if (!isNetworkConnected()) {
+            Toast.makeText(this, "Check Network Connection.", Toast.LENGTH_LONG).show();
+            return;
+        }
         String fname,lname,email,mobile,pass;
         fname = e1.getText().toString().trim();
         lname = e2.getText().toString().trim();
