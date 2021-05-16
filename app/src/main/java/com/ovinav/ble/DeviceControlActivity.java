@@ -150,7 +150,7 @@ public class DeviceControlActivity extends AppCompatActivity {
                 // Show all the supported services and characteristics on the user interface.
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
-                displayData(intent.getStringExtra(mBluetoothLeService.EXTRA_DATA));
+                displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
             }
         }
     };
@@ -169,18 +169,12 @@ public class DeviceControlActivity extends AppCompatActivity {
 
     private static boolean isExternalStorageReadOnly() {
         String extStorageState = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(extStorageState)) {
-            return true;
-        }
-        return false;
+        return Environment.MEDIA_MOUNTED_READ_ONLY.equals(extStorageState);
     }
 
     private static boolean isExternalStorageAvailable() {
         String extStorageState = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(extStorageState)) {
-            return true;
-        }
-        return false;
+        return Environment.MEDIA_MOUNTED.equals(extStorageState);
     }
 
     private void clearUI() {
@@ -224,14 +218,14 @@ public class DeviceControlActivity extends AppCompatActivity {
 
         // Sets up UI references.
         ((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
-        mConnectionState = (TextView) findViewById(R.id.connection_state);
+        mConnectionState = findViewById(R.id.connection_state);
         // is serial present?
-        isSerial = (TextView) findViewById(R.id.isSerial);
+        isSerial = findViewById(R.id.isSerial);
 
-        mDataField = (TextView) findViewById(R.id.data_value);
+        mDataField = findViewById(R.id.data_value);
 
 
-        btn_Instant = (Button) findViewById(R.id.Instant_btn);
+        btn_Instant = findViewById(R.id.Instant_btn);
         btn_RealTime = findViewById(R.id.real_btn);
         btn_sync = findViewById(R.id.sync_btn);
         sp = getSharedPreferences("MODE", MODE_PRIVATE);
@@ -366,7 +360,7 @@ public class DeviceControlActivity extends AppCompatActivity {
             // textView.append(data);
             if (!data.equals("") || data != null || data.length() == 0) {
                 data = data.replace("\\r", "").replace("\\n", "").trim();
-                String d[] = data.split(":");
+                String[] d = data.split(":");
                 if (d.length == 3) {
                     dataList.add(data.replace("\\r", "").replace("\\n", "").trim());
                     {
@@ -374,26 +368,60 @@ public class DeviceControlActivity extends AppCompatActivity {
                         series.setShape(PointsGraphSeries.Shape.POINT);
                         int col;
                         int r, b, g, a;
-                        a = 128;
-                        r = g = 0;
-                        b = 255;
+
+                        a = 170;
+                        r = g = b = 0;
                         try {
                             float pressure = Float.parseFloat(d[2]);
-                            if (pressure > 215) {
-                                r = 255;
-                                b = 0;
-                                a = 200;
-                            } else if (pressure > 180) {
-                                g = 255;
-                                b = 0;
-                                a = 170;
-                            } else if (pressure > 158) {
-                                r = 255;
-                                g = 255;
-                                b = 0;
+//                            if (pressure > 215) {
+//                                r = 255;
+//                                b = 0;
+//                                a = 200;
+//                            } else if (pressure > 180) {
+//                                g = 255;
+//                                b = 0;
+//                                a = 170;
+//                            } else if (pressure > 158) {
+//                                r = 255;
+//                                g = 255;
+//                                b = 0;
+//                                a = 150;
+//                            }
+
+                            if (pressure >= 260) {
+                                r = 140;
+                                b = 8;
+                                g = 8;
+                                a = 255;
+                            } else if (pressure >= 220) {
+                                r = 200;
+                                b = 8;
+                                g = 8;
+                                a = 204;
+                            } else if (pressure == 200) {
+                                r = 158;
+                                g = 4;
+                                b = 4;
+                                a = 190;
+                            } else if (pressure >= 170) {
+                                r = 242;
+                                g = 170;
+                                b = 88;
+                                a = (int) 00.70 * 255;
+                            } else if (pressure >= 140) {
+                                r = 237;
+                                g = 242;
+                                b = 88;
+                                a = 178;
+                            } else if (pressure >= 110) {
+                                r = 110;
+                                g = 240;
+                                b = 90;
                                 a = 150;
                             }
-
+//                            else{
+//                                Toast.makeText(mBluetoothLeService, ""+pressure, Toast.LENGTH_SHORT).show();
+//                            }
 
                             col = Color.argb(a, r, g, b);
                             series.setSize(pressure / 4);
@@ -410,6 +438,7 @@ public class DeviceControlActivity extends AppCompatActivity {
                             stack.add(series);
                             graph.addSeries(series);
                         } catch (Exception ex) {
+//                            Toast.makeText(mBluetoothLeService, ex.toString(), Toast.LENGTH_SHORT).show();
                             Log.d("EXCEPTION", ex.toString());
                         }
                     }
