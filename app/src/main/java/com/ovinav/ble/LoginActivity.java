@@ -1,6 +1,5 @@
 package com.ovinav.ble;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -8,7 +7,7 @@ import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.telephony.TelephonyManager;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Patterns;
 import android.view.View;
@@ -57,14 +56,15 @@ public class LoginActivity extends AppCompatActivity implements Networkback {
         e4.setText(matId);
         parent = findViewById(R.id.lin_login);
         getSupportActionBar().setTitle("LOGIN");
-
-        if (Build.VERSION.SDK_INT >= 26) {
+        deviceId = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
+        /*if (Build.VERSION.SDK_INT >= 26) {
             if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE}, 100);
 
                 return;
             }
-            deviceId = getSystemService(TelephonyManager.class).getImei();
+            deviceId = ((TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE)).getImei();
+            Toast.makeText(this, deviceId, Toast.LENGTH_SHORT).show();
             e3.setText(deviceId);
 
         } else {
@@ -73,11 +73,12 @@ public class LoginActivity extends AppCompatActivity implements Networkback {
                 requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE}, 100);
                 return;
             }
-            deviceId = getSystemService(TelephonyManager.class).getDeviceId();
+            deviceId = ((TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE)).getDeviceId();
             e3.setText(deviceId);
-        }
+        }*/
 
         check = findViewById(R.id.checkbox);
+        Toast.makeText(this, deviceId, Toast.LENGTH_SHORT).show();
         e3.setText(deviceId);
         e1.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
@@ -141,7 +142,8 @@ public class LoginActivity extends AppCompatActivity implements Networkback {
             Toast.makeText(this, "Check Network Connection.", Toast.LENGTH_LONG).show();
             return;
         }
-        deviceId = getSystemService(TelephonyManager.class).getDeviceId();
+
+        // deviceId = getSystemService(TelephonyManager.class).getDeviceId();
         String email, password;
         email = e1.getText().toString().trim();
         password = e2.getText().toString().trim();
@@ -159,7 +161,7 @@ public class LoginActivity extends AppCompatActivity implements Networkback {
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     public void signup(View v) {
-        deviceId = getSystemService(TelephonyManager.class).getDeviceId();
+        //deviceId = getSystemService(TelephonyManager.class).getDeviceId();
         Intent i = new Intent(this, RegisterActivity.class);
         i.putExtra("devId", deviceId);
         i.putExtra("matId", matId);

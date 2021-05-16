@@ -41,7 +41,7 @@
         <activity
             android:name=".MainActivity"
 
-            android:theme="@style/FullscreenActionBarStyle"></activity>
+            android:theme="@style/FullscreenActionBarStyle" />
         <service
             android:name=".BluetoothLeService"
             android:enabled="true"
